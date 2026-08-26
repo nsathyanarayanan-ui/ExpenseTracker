@@ -1,0 +1,19 @@
+R_DEF: Internal format may change without notice
+local
+id barChart
+id etLimit
+id flagsContainer
+id pieChart
+id rvBudgets
+id savingsContainer
+id tvCategoryName
+id tvHealthBand
+id tvHealthScore
+id tvPeriod
+id tvTotalCredit
+id tvTotalDebit
+layout activity_main
+layout activity_settings
+layout item_budget
+string app_name
+style Theme.ExpenseTracker

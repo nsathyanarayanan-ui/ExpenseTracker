@@ -1,0 +1,14 @@
+[
+    {
+        "merged": "com.expensetracker.app-debug-42:/layout_activity_main.xml.flat",
+        "source": "com.expensetracker.app-main-44:/layout/activity_main.xml"
+    },
+    {
+        "merged": "com.expensetracker.app-debug-42:/layout_item_budget.xml.flat",
+        "source": "com.expensetracker.app-main-44:/layout/item_budget.xml"
+    },
+    {
+        "merged": "com.expensetracker.app-debug-42:/layout_activity_settings.xml.flat",
+        "source": "com.expensetracker.app-main-44:/layout/activity_settings.xml"
+    }
+]
