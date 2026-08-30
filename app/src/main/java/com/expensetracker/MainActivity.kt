@@ -9,16 +9,20 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
+import com.expensetracker.adapter.TransactionAdapter
 import com.expensetracker.databinding.ActivityMainBinding
 import com.expensetracker.viewmodel.MainViewModel
 import com.github.mikephil.charting.data.*
 import com.github.mikephil.charting.components.Legend
-import com.github.mikephil.charting.utils.ColorTemplate
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var viewModel: MainViewModel
+    private lateinit var transactionAdapter: TransactionAdapter
 
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -35,8 +39,44 @@ class MainActivity : AppCompatActivity() {
 
         viewModel = ViewModelProvider(this)[MainViewModel::class.java]
 
+        transactionAdapter = TransactionAdapter(emptyList())
+        binding.rvTransactions.layoutManager = LinearLayoutManager(this)
+        binding.rvTransactions.adapter = transactionAdapter
+
         requestPermissionsIfNeeded()
         observeViewModel()
+        wireButtons()
+    }
+
+    private fun wireButtons() {
+        binding.btnPrevMonth.setOnClickListener { viewModel.goToPreviousMonth() }
+        binding.btnNextMonth.setOnClickListener { viewModel.goToNextMonth() }
+
+        binding.btnSettingsIcon.setOnClickListener {
+            startActivity(android.content.Intent(this, SettingsActivity::class.java))
+        }
+        binding.btnLabelIcon.setOnClickListener {
+            startActivity(android.content.Intent(this, AliasActivity::class.java))
+        }
+        binding.btnLabelAccounts.setOnClickListener {
+            startActivity(android.content.Intent(this, AliasActivity::class.java))
+        }
+
+        binding.btnImportSms.setOnClickListener {
+            binding.btnImportSms.isEnabled = false
+            binding.btnImportSms.text = "Importing..."
+            lifecycleScope.launch {
+                val result = SmsImporter.importExisting(this@MainActivity)
+                binding.btnImportSms.isEnabled = true
+                binding.btnImportSms.text = "Import Past SMS"
+                android.widget.Toast.makeText(
+                    this@MainActivity,
+                    "Scanned ${result.scanned} messages, imported ${result.imported} transactions",
+                    android.widget.Toast.LENGTH_LONG
+                ).show()
+                viewModel.loadCurrentMonth()
+            }
+        }
     }
 
     private fun requestPermissionsIfNeeded() {
@@ -55,24 +95,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun observeViewModel() {
-        viewModel.totalDebit.observe(this) {
-            binding.tvTotalDebit.text = "₹%,.0f".format(it)
-        }
-        viewModel.totalCredit.observe(this) {
-            binding.tvTotalCredit.text = "₹%,.0f".format(it)
-        }
-        viewModel.healthScore.observe(this) {
-            binding.tvHealthScore.text = "$it / 100"
-        }
-        viewModel.healthBand.observe(this) {
-            binding.tvHealthBand.text = "Rating: $it"
-        }
-        viewModel.categoryTotals.observe(this) { cats ->
-            renderPieChart(cats)
-        }
-        viewModel.merchantTotals.observe(this) { merchants ->
-            renderBarChart(merchants.take(10))
-        }
+        viewModel.monthLabel.observe(this) { binding.tvPeriod.text = it }
+        viewModel.totalDebit.observe(this) { binding.tvTotalDebit.text = "₹%,.0f".format(it) }
+        viewModel.totalCredit.observe(this) { binding.tvTotalCredit.text = "₹%,.0f".format(it) }
+        viewModel.healthScore.observe(this) { binding.tvHealthScore.text = "$it / 100" }
+        viewModel.healthBand.observe(this) { binding.tvHealthBand.text = it }
+        viewModel.categoryTotals.observe(this) { renderPieChart(it) }
+        viewModel.merchantTotals.observe(this) { renderBarChart(it.take(10)) }
+        viewModel.recentTransactions.observe(this) { transactionAdapter.submitList(it) }
+
         viewModel.unnecessaryFlags.observe(this) { flags ->
             binding.flagsContainer.removeAllViews()
             if (flags.isEmpty()) {
@@ -104,16 +135,18 @@ class MainActivity : AppCompatActivity() {
     private fun renderPieChart(cats: List<com.expensetracker.db.CategoryTotal>) {
         val entries = cats.map { PieEntry(it.total.toFloat(), it.category) }
         val dataSet = PieDataSet(entries, "")
-        dataSet.colors = ColorTemplate.MATERIAL_COLORS.toList() + ColorTemplate.VORDIPLOM_COLORS.toList()
+        dataSet.colors = cats.map { CategoryColors.forCategory(it.category) }
         dataSet.valueTextSize = 10f
         dataSet.valueTextColor = android.graphics.Color.WHITE
+        dataSet.sliceSpace = 2f
 
         binding.pieChart.data = PieData(dataSet)
         binding.pieChart.description.isEnabled = false
         binding.pieChart.legend.textColor = android.graphics.Color.WHITE
         binding.pieChart.legend.orientation = Legend.LegendOrientation.VERTICAL
         binding.pieChart.setEntryLabelColor(android.graphics.Color.WHITE)
-        binding.pieChart.setHoleColor(android.graphics.Color.parseColor("#171A21"))
+        binding.pieChart.setHoleColor(android.graphics.Color.parseColor("#161A22"))
+        binding.pieChart.holeRadius = 45f
         binding.pieChart.animateY(600)
         binding.pieChart.invalidate()
     }

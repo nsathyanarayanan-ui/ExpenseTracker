@@ -22,6 +22,9 @@ class TransactionRepository(context: Context) {
 
     suspend fun topExpenses(n: Int = 20): List<Transaction> = dao.topExpenses(n)
 
+    suspend fun getRecentInRange(start: Long, end: Long, limit: Int = 30): List<Transaction> =
+        dao.getRecentInRange(start, end, limit)
+
     suspend fun transactionsInCategory(category: String, start: Long, end: Long): List<Transaction> =
         dao.transactionsInCategory(category, start, end)
 

@@ -46,8 +46,14 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions WHERE category = :category AND timestamp BETWEEN :start AND :end ORDER BY amount DESC")
     suspend fun transactionsInCategory(category: String, start: Long, end: Long): List<Transaction>
 
+    @Query("SELECT * FROM transactions WHERE timestamp BETWEEN :start AND :end ORDER BY timestamp DESC LIMIT :limit")
+    suspend fun getRecentInRange(start: Long, end: Long, limit: Int): List<Transaction>
+
     @Query("SELECT * FROM transactions WHERE type = 'DEBIT' ORDER BY amount DESC LIMIT :n")
     suspend fun topExpenses(n: Int): List<Transaction>
+
+    @Query("UPDATE transactions SET merchant = :label, category = :category WHERE rawMerchantKey = :rawKey")
+    suspend fun applyAliasToExisting(rawKey: String, label: String, category: String)
 }
 
 data class CategoryTotal(val category: String, val total: Double, val count: Int)

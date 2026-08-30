@@ -46,6 +46,12 @@ object SmsParser {
         Pattern.compile("info[:\\-]\\s*([A-Za-z0-9 &._'\\-]{2,40})", Pattern.CASE_INSENSITIVE)
     )
 
+    // Fallback for transfer-only SMS with no merchant name — just a destination/source account.
+    // Handles both "credited to a/c XX2063" and "debited from a/c no. XXXXXXX8769" wordings.
+    private val COUNTERPARTY_ACCOUNT_PATTERN = Pattern.compile(
+        "(?:credited to|debited from) a/c(?:\\s*no\\.?)?\\s*X*(\\d{3,6})", Pattern.CASE_INSENSITIVE
+    )
+
     private val ACCOUNT_PATTERN = Pattern.compile(
         "(?:a/c|acct|account)\\D{0,5}(?:no\\.?)?\\D{0,3}(?:x{2,}|\\*{2,})?(\\d{4})",
         Pattern.CASE_INSENSITIVE
@@ -66,10 +72,21 @@ object SmsParser {
         if (!amountMatcher.find()) return null
         val amount = amountMatcher.group(1)!!.replace(",", "").toDoubleOrNull() ?: return null
 
+        // Determine DEBIT vs CREDIT by whichever keyword appears earliest in the message —
+        // bank SMS always states what happened to *your* account first, then the
+        // counterparty's account second (e.g. "...is credited for Rs.X... and debited
+        // from a/c Y" — that "debited" refers to the OTHER party, not you).
+        val debitIdx = DEBIT_KEYWORDS
+            .mapNotNull { kw -> body.indexOf(kw, ignoreCase = true).takeIf { it >= 0 } }
+            .minOrNull() ?: Int.MAX_VALUE
+        val creditIdx = CREDIT_KEYWORDS
+            .mapNotNull { kw -> body.indexOf(kw, ignoreCase = true).takeIf { it >= 0 } }
+            .minOrNull() ?: Int.MAX_VALUE
+
         val type = when {
-            DEBIT_KEYWORDS.any { body.contains(it, ignoreCase = true) } -> TxnType.DEBIT
-            CREDIT_KEYWORDS.any { body.contains(it, ignoreCase = true) } -> TxnType.CREDIT
-            else -> return null // not a recognizable transaction alert (e.g. OTP, promo)
+            debitIdx == Int.MAX_VALUE && creditIdx == Int.MAX_VALUE -> return null
+            debitIdx <= creditIdx -> TxnType.DEBIT
+            else -> TxnType.CREDIT
         }
 
         // Reject OTP / promotional messages explicitly
@@ -85,10 +102,16 @@ object SmsParser {
                 break
             }
         }
+        if (merchant == "Unknown") {
+            val am = COUNTERPARTY_ACCOUNT_PATTERN.matcher(body)
+            if (am.find()) {
+                merchant = "Account XX${am.group(1)}"
+            }
+        }
 
         var account: String? = null
-        val am = ACCOUNT_PATTERN.matcher(body)
-        if (am.find()) account = am.group(1)
+        val accMatcher = ACCOUNT_PATTERN.matcher(body)
+        if (accMatcher.find()) account = accMatcher.group(1)
 
         return ParsedSms(amount, type, merchant, account, body)
     }

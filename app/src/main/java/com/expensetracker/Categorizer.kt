@@ -40,6 +40,10 @@ object Categorizer {
 
     fun categorize(merchant: String): String {
         val m = merchant.lowercase()
+
+        // Transfer-only SMS with no merchant name — just "Account XX1234"
+        if (m.startsWith("account xx")) return "Bank Transfer"
+
         for ((category, keywords) in RULES) {
             if (keywords.any { m.contains(it) }) return category
         }

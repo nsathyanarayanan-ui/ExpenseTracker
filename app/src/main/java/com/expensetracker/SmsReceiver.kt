@@ -26,20 +26,25 @@ class SmsReceiver : BroadcastReceiver() {
             val timestamp = sms.timestampMillis
 
             val parsed = SmsParser.parse(sender, body) ?: continue
+            val rawKey = parsed.merchant
             val category = Categorizer.categorize(parsed.merchant)
-
-            val txn = Transaction(
-                amount = parsed.amount,
-                type = parsed.type.name,
-                merchant = parsed.merchant,
-                category = category,
-                account = parsed.account,
-                timestamp = timestamp,
-                rawSms = body
-            )
 
             CoroutineScope(Dispatchers.IO).launch {
                 val db = AppDatabase.getInstance(context)
+                val alias = db.merchantAliasDao().getForKey(rawKey)
+                val displayMerchant = alias?.label ?: rawKey
+                val finalCategory = alias?.category ?: category
+
+                val txn = Transaction(
+                    amount = parsed.amount,
+                    type = parsed.type.name,
+                    merchant = displayMerchant,
+                    rawMerchantKey = rawKey,
+                    category = finalCategory,
+                    account = parsed.account,
+                    timestamp = timestamp,
+                    rawSms = body
+                )
                 db.transactionDao().insert(txn)
 
                 // After storing, kick off a budget check for this category

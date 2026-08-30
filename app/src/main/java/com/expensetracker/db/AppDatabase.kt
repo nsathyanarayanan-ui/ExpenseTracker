@@ -24,10 +24,11 @@ interface BudgetDao {
     suspend fun getForCategory(category: String): Budget?
 }
 
-@Database(entities = [Transaction::class, Budget::class], version = 1, exportSchema = false)
+@Database(entities = [Transaction::class, Budget::class, MerchantAlias::class], version = 3, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun transactionDao(): TransactionDao
     abstract fun budgetDao(): BudgetDao
+    abstract fun merchantAliasDao(): MerchantAliasDao
 
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null
@@ -38,7 +39,7 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "expense_tracker.db"
-                ).build()
+                ).fallbackToDestructiveMigration().build()
                 INSTANCE = instance
                 instance
             }
