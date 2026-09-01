@@ -3,18 +3,12 @@ package com.expensetracker
 import android.content.Context
 import android.net.Uri
 import android.provider.Telephony
+import android.util.Log
 import com.expensetracker.db.AppDatabase
 import com.expensetracker.db.Transaction
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-/**
- * One-time backfill: scans the device's existing SMS inbox (content://sms/inbox),
- * runs every message through the same SmsParser + Categorizer used for live SMS,
- * and inserts any that look like bank transactions. Safe to run more than once —
- * Transaction has a unique (timestamp, rawSms) index, so re-imports are ignored
- * rather than duplicated.
- */
 object SmsImporter {
 
     data class ImportResult(val scanned: Int, val imported: Int)
@@ -47,7 +41,17 @@ object SmsImporter {
                 val body = it.getString(bodyIdx) ?: continue
                 val timestamp = it.getLong(dateIdx)
 
-                val parsed = SmsParser.parse(sender, body) ?: continue
+                if (scanned <= 15) {
+                    Log.d("SmsImporter", "#$scanned sender=[$sender] body=[${body.take(100)}]")
+                }
+
+                val parsed = SmsParser.parse(sender, body)
+
+                if (scanned <= 15) {
+                    Log.d("SmsImporter", "#$scanned parsed=$parsed")
+                }
+
+                if (parsed == null) continue
                 val rawKey = parsed.merchant
                 val alias = aliases[rawKey]
                 val displayMerchant = alias?.label ?: rawKey
