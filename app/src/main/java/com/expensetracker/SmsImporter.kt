@@ -78,6 +78,11 @@ object SmsImporter {
                 if (rowId != -1L) {
                     imported++
                 } else if (alias == null) {
+                    // Already imported previously. If it's not manually labeled via an alias,
+                    // refresh its category/merchant using current logic — this is what lets
+                    // categorization fixes (e.g. newly recognized investment SMS patterns)
+                    // retroactively apply to old entries on a re-import, instead of being
+                    // silently skipped forever just because the row already exists.
                     dao.recategorizeExisting(timestamp, body, displayMerchant, category)
                 }
             }

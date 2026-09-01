@@ -43,7 +43,10 @@ object Categorizer {
         "coin by zerodha", "nippon", "hdfc mutual", "icici prudential", "franklin",
         "uti mutual", "axis mutual", "kotak mutual", "sbi mutual", "invesco",
         "systematic investment", "elss", "smallcase", "nav ", "asset management",
+        // Registrar & Transfer Agents — nearly always mean a mutual fund transaction
+        // regardless of which fund house, so these catch cases the fund-house names miss
         "cams", "kfintech", "karvy",
+        // No-space AMC short codes as they actually appear in bank SMS (e.g. "HDFCMF")
         "hdfcmf", "icicipru", "sbimf", "adityabsl", "kotakmf", "nipponindia",
         "franklintempleton", "utimf", "axismf", "tataamc", "mirae", "ppfas",
         "quantmf", "edelweissmf", "achinwdr"

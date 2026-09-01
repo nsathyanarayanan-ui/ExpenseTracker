@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.view.View
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.result.contract.ActivityResultContracts
@@ -16,6 +17,7 @@ import com.expensetracker.databinding.ActivityMainBinding
 import com.expensetracker.viewmodel.MainViewModel
 import com.github.mikephil.charting.data.*
 import com.github.mikephil.charting.components.Legend
+import com.google.android.material.tabs.TabLayout
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
@@ -46,6 +48,23 @@ class MainActivity : AppCompatActivity() {
         requestPermissionsIfNeeded()
         observeViewModel()
         wireButtons()
+        setupTabs()
+    }
+
+    private fun setupTabs() {
+        val tabs = listOf(binding.tabOverview, binding.tabCategories, binding.tabActivity, binding.tabInsights)
+
+        fun showTab(index: Int) {
+            tabs.forEachIndexed { i, view -> view.visibility = if (i == index) View.VISIBLE else View.GONE }
+        }
+
+        binding.tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
+            override fun onTabSelected(tab: TabLayout.Tab) { showTab(tab.position) }
+            override fun onTabUnselected(tab: TabLayout.Tab) {}
+            override fun onTabReselected(tab: TabLayout.Tab) {}
+        })
+
+        showTab(0)
     }
 
     private fun wireButtons() {
