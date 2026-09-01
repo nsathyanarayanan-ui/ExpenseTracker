@@ -29,15 +29,16 @@ object InsightsEngine {
             if (c.category in Categorizer.DISCRETIONARY_CATEGORIES && totalSpend > 0) {
                 val pct = c.total / totalSpend * 100
                 if (pct >= 12) {
-                    flags.add("${c.category}: ₹%.0f (%.1f%% of spend) across %d transactions — high discretionary share"
-                        .format(c.total, pct, c.count))
+                    val amountStr = "₹%.0f".format(c.total)
+                    val pctStr = "%.1f".format(pct)
+                    flags.add("${c.category}: $amountStr ($pctStr% of spend) across ${c.count} transactions — high discretionary share")
                 }
             }
         }
         for (m in merchants) {
             if (m.count >= 15 && (m.total / m.count) < 1000) {
-                flags.add("${m.merchant}: ${m.count} visits averaging ₹%.0f — frequent small-ticket spending, consider batching"
-                    .format(m.total / m.count))
+                val avgStr = "₹%.0f".format(m.total / m.count)
+                flags.add("${m.merchant}: ${m.count} visits averaging $avgStr — frequent small-ticket spending, consider batching")
             }
         }
         return flags

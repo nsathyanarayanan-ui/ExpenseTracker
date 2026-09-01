@@ -114,11 +114,9 @@ class MainActivity : AppCompatActivity() {
         viewModel.savingsOpportunities.observe(this) { savings ->
             binding.savingsContainer.removeAllViews()
             savings.forEach {
-                addLine(
-                    binding.savingsContainer,
-                    "• ${it.title} — save ₹%,.0f/mo (${it.basis})".format(it.monthlySavings),
-                    "#5EEAD4"
-                )
+                val amountStr = "₹%,.0f".format(it.monthlySavings)
+                val line = "• ${it.title} — save $amountStr/mo (${it.basis})"
+                addLine(binding.savingsContainer, line, "#5EEAD4")
             }
         }
     }
