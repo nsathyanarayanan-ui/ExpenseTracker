@@ -175,6 +175,7 @@ class MainActivity : AppCompatActivity() {
             putExtra(android.content.Intent.EXTRA_TEXT, report)
         }
         startActivity(android.content.Intent.createChooser(intent, "Share report"))
+    }
 
     private fun addLine(container: android.widget.LinearLayout, text: String, colorHex: String) {
         val tv = TextView(this)
