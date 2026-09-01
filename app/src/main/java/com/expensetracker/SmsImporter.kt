@@ -75,7 +75,11 @@ object SmsImporter {
                     rawSms = body
                 )
                 val rowId = dao.insert(txn)
-                if (rowId != -1L) imported++
+                if (rowId != -1L) {
+                    imported++
+                } else if (alias == null) {
+                    dao.recategorizeExisting(timestamp, body, displayMerchant, category)
+                }
             }
         }
 

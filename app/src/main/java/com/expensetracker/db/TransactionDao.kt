@@ -57,6 +57,9 @@ interface TransactionDao {
 
     @Query("UPDATE transactions SET merchant = :label, category = :category WHERE rawMerchantKey = :rawKey")
     suspend fun applyAliasToExisting(rawKey: String, label: String, category: String)
+
+    @Query("UPDATE transactions SET merchant = :merchant, category = :category WHERE timestamp = :timestamp AND rawSms = :rawSms")
+    suspend fun recategorizeExisting(timestamp: Long, rawSms: String, merchant: String, category: String)
 }
 
 data class CategoryTotal(val category: String, val total: Double, val count: Int)

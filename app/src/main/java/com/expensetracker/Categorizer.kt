@@ -42,7 +42,11 @@ object Categorizer {
         "mutual fund", "sip", "amc", "folio", "zerodha", "groww", "kuvera",
         "coin by zerodha", "nippon", "hdfc mutual", "icici prudential", "franklin",
         "uti mutual", "axis mutual", "kotak mutual", "sbi mutual", "invesco",
-        "systematic investment", "elss", "smallcase", "nav ", "asset management"
+        "systematic investment", "elss", "smallcase", "nav ", "asset management",
+        "cams", "kfintech", "karvy",
+        "hdfcmf", "icicipru", "sbimf", "adityabsl", "kotakmf", "nipponindia",
+        "franklintempleton", "utimf", "axismf", "tataamc", "mirae", "ppfas",
+        "quantmf", "edelweissmf", "achinwdr"
     )
 
     fun categorize(merchant: String, rawBody: String = ""): String {
