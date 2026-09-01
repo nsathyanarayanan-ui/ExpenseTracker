@@ -132,8 +132,13 @@ class MainActivity : AppCompatActivity() {
         container.addView(tv)
     }
 
-    private fun renderPieChart(cats: List<com.expensetracker.db.CategoryTotal>) {
-        val entries = cats.map { PieEntry(it.total.toFloat(), it.category) }
+private fun renderPieChart(cats: List<com.expensetracker.db.CategoryTotal>) {
+    if (cats.isEmpty()) {
+        binding.pieChart.clear()
+        binding.pieChart.invalidate()
+        return
+    }
+    val entries = cats.map { PieEntry(it.total.toFloat(), it.category) }
         val dataSet = PieDataSet(entries, "")
         dataSet.colors = cats.map { CategoryColors.forCategory(it.category) }
         dataSet.valueTextSize = 10f
@@ -151,8 +156,13 @@ class MainActivity : AppCompatActivity() {
         binding.pieChart.invalidate()
     }
 
-    private fun renderBarChart(merchants: List<com.expensetracker.db.MerchantTotal>) {
-        val entries = merchants.mapIndexed { i, m -> BarEntry(i.toFloat(), m.total.toFloat()) }
+private fun renderBarChart(merchants: List<com.expensetracker.db.MerchantTotal>) {
+    if (merchants.isEmpty()) {
+        binding.barChart.clear()
+        binding.barChart.invalidate()
+        return
+    }
+    val entries = merchants.mapIndexed { i, m -> BarEntry(i.toFloat(), m.total.toFloat()) }
         val dataSet = BarDataSet(entries, "Spend")
         dataSet.color = android.graphics.Color.parseColor("#5EEAD4")
         dataSet.valueTextColor = android.graphics.Color.WHITE
