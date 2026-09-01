@@ -38,8 +38,21 @@ object Categorizer {
         "Travel" to listOf("irctc", "makemytrip", "goibibo", "ixigo", "airlines", "indigo", "yatra"),
     )
 
-    fun categorize(merchant: String): String {
+    private val INVESTMENT_KEYWORDS = listOf(
+        "mutual fund", "sip", "amc", "folio", "zerodha", "groww", "kuvera",
+        "coin by zerodha", "nippon", "hdfc mutual", "icici prudential", "franklin",
+        "uti mutual", "axis mutual", "kotak mutual", "sbi mutual", "invesco",
+        "systematic investment", "elss", "smallcase", "nav ", "asset management"
+    )
+
+    fun categorize(merchant: String, rawBody: String = ""): String {
         val m = merchant.lowercase()
+        val body = rawBody.lowercase()
+
+        // Checked first, using the raw SMS text — investment SIP debits are often
+        // transfer-style messages with no real merchant name in the `merchant` field,
+        // so the "mutual fund"/"SIP" signal usually only lives in the body text.
+        if (INVESTMENT_KEYWORDS.any { body.contains(it) || m.contains(it) }) return "Investments"
 
         // Transfer-only SMS with no merchant name — just "Account XX1234"
         if (m.startsWith("account xx")) return "Bank Transfer"

@@ -55,6 +55,7 @@ class MainActivity : AppCompatActivity() {
         binding.btnSettingsIcon.setOnClickListener {
             startActivity(android.content.Intent(this, SettingsActivity::class.java))
         }
+        binding.btnShareIcon.setOnClickListener { shareMonthlyReport() }
         binding.btnLabelIcon.setOnClickListener {
             startActivity(android.content.Intent(this, AliasActivity::class.java))
         }
@@ -98,6 +99,7 @@ class MainActivity : AppCompatActivity() {
         viewModel.monthLabel.observe(this) { binding.tvPeriod.text = it }
         viewModel.totalDebit.observe(this) { binding.tvTotalDebit.text = "₹%,.0f".format(it) }
         viewModel.totalCredit.observe(this) { binding.tvTotalCredit.text = "₹%,.0f".format(it) }
+        viewModel.totalInvested.observe(this) { binding.tvTotalInvested.text = "₹%,.0f".format(it) }
         viewModel.healthScore.observe(this) { binding.tvHealthScore.text = "$it / 100" }
         viewModel.healthBand.observe(this) { binding.tvHealthBand.text = it }
         viewModel.categoryTotals.observe(this) { renderPieChart(it) }
@@ -119,7 +121,60 @@ class MainActivity : AppCompatActivity() {
                 addLine(binding.savingsContainer, line, "#5EEAD4")
             }
         }
+        viewModel.budgetStatus.observe(this) { lines ->
+            binding.budgetStatusContainer.removeAllViews()
+            if (lines.isNotEmpty()) {
+                val header = TextView(this)
+                header.text = "Budget Status"
+                header.setTextColor(android.graphics.Color.WHITE)
+                header.textSize = 15f
+                header.setTypeface(header.typeface, android.graphics.Typeface.BOLD)
+                header.setPadding(0, 4, 0, 8)
+                binding.budgetStatusContainer.addView(header)
+                lines.forEach { addLine(binding.budgetStatusContainer, it.text, it.colorHex) }
+            }
+        }
     }
+
+    private fun shareMonthlyReport() {
+        val month = binding.tvPeriod.text.toString()
+        val spent = binding.tvTotalDebit.text.toString()
+        val received = binding.tvTotalCredit.text.toString()
+        val invested = binding.tvTotalInvested.text.toString()
+        val health = binding.tvHealthScore.text.toString()
+        val band = binding.tvHealthBand.text.toString()
+
+        val cats = viewModel.categoryTotals.value ?: emptyList()
+        val catLines = cats.joinToString("\n") { "  ${it.category}: ₹%,.0f (${it.count} txns)".format(it.total) }
+
+        val savings = viewModel.savingsOpportunities.value ?: emptyList()
+        val savingsLines = savings.joinToString("\n") {
+            "  • ${it.title} — save ₹%,.0f/mo".format(it.monthlySavings)
+        }
+
+        val report = buildString {
+            appendLine("Expense Tracker — $month")
+            appendLine("=".repeat(32))
+            appendLine("Spent: $spent")
+            appendLine("Received: $received")
+            appendLine("Invested: $invested")
+            appendLine("Financial Health: $health ($band)")
+            appendLine()
+            appendLine("Spending by category:")
+            appendLine(catLines.ifBlank { "  No transactions this period" })
+            if (savings.isNotEmpty()) {
+                appendLine()
+                appendLine("Savings opportunities:")
+                appendLine(savingsLines)
+            }
+        }
+
+        val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(android.content.Intent.EXTRA_SUBJECT, "Expense Tracker Report — $month")
+            putExtra(android.content.Intent.EXTRA_TEXT, report)
+        }
+        startActivity(android.content.Intent.createChooser(intent, "Share report"))
 
     private fun addLine(container: android.widget.LinearLayout, text: String, colorHex: String) {
         val tv = TextView(this)
@@ -130,13 +185,13 @@ class MainActivity : AppCompatActivity() {
         container.addView(tv)
     }
 
-private fun renderPieChart(cats: List<com.expensetracker.db.CategoryTotal>) {
-    if (cats.isEmpty()) {
-        binding.pieChart.clear()
-        binding.pieChart.invalidate()
-        return
-    }
-    val entries = cats.map { PieEntry(it.total.toFloat(), it.category) }
+    private fun renderPieChart(cats: List<com.expensetracker.db.CategoryTotal>) {
+        if (cats.isEmpty()) {
+            binding.pieChart.clear()
+            binding.pieChart.invalidate()
+            return
+        }
+        val entries = cats.map { PieEntry(it.total.toFloat(), it.category) }
         val dataSet = PieDataSet(entries, "")
         dataSet.colors = cats.map { CategoryColors.forCategory(it.category) }
         dataSet.valueTextSize = 10f
@@ -154,13 +209,13 @@ private fun renderPieChart(cats: List<com.expensetracker.db.CategoryTotal>) {
         binding.pieChart.invalidate()
     }
 
-private fun renderBarChart(merchants: List<com.expensetracker.db.MerchantTotal>) {
-    if (merchants.isEmpty()) {
-        binding.barChart.clear()
-        binding.barChart.invalidate()
-        return
-    }
-    val entries = merchants.mapIndexed { i, m -> BarEntry(i.toFloat(), m.total.toFloat()) }
+    private fun renderBarChart(merchants: List<com.expensetracker.db.MerchantTotal>) {
+        if (merchants.isEmpty()) {
+            binding.barChart.clear()
+            binding.barChart.invalidate()
+            return
+        }
+        val entries = merchants.mapIndexed { i, m -> BarEntry(i.toFloat(), m.total.toFloat()) }
         val dataSet = BarDataSet(entries, "Spend")
         dataSet.color = android.graphics.Color.parseColor("#5EEAD4")
         dataSet.valueTextColor = android.graphics.Color.WHITE

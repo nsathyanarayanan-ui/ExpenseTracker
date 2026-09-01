@@ -9,6 +9,13 @@ import com.expensetracker.db.Transaction
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+/**
+ * One-time backfill: scans the device's existing SMS inbox (content://sms/inbox),
+ * runs every message through the same SmsParser + Categorizer used for live SMS,
+ * and inserts any that look like bank transactions. Safe to run more than once —
+ * Transaction has a unique (timestamp, rawSms) index, so re-imports are ignored
+ * rather than duplicated.
+ */
 object SmsImporter {
 
     data class ImportResult(val scanned: Int, val imported: Int)
@@ -55,7 +62,7 @@ object SmsImporter {
                 val rawKey = parsed.merchant
                 val alias = aliases[rawKey]
                 val displayMerchant = alias?.label ?: rawKey
-                val category = alias?.category ?: Categorizer.categorize(parsed.merchant)
+                val category = alias?.category ?: Categorizer.categorize(parsed.merchant, parsed.rawBody)
 
                 val txn = Transaction(
                     amount = parsed.amount,

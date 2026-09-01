@@ -29,6 +29,15 @@
                 android:textStyle="bold" />
 
             <ImageButton
+                android:id="@+id/btnShareIcon"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Share report"
+                android:src="@android:drawable/ic_menu_share"
+                app:tint="#9AA3B2" />
+
+            <ImageButton
                 android:id="@+id/btnSettingsIcon"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
@@ -128,7 +137,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:layout_marginEnd="6dp"
+                android:layout_marginEnd="5dp"
                 app:cardBackgroundColor="#161A22"
                 app:cardCornerRadius="14dp"
                 app:cardElevation="0dp"
@@ -139,24 +148,24 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="14dp">
+                    android:padding="11dp">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="SPENT"
                         android:textColor="#6B7280"
-                        android:textSize="10.5sp"
-                        android:letterSpacing="0.08" />
+                        android:textSize="9.5sp"
+                        android:letterSpacing="0.06" />
 
                     <TextView
                         android:id="@+id/tvTotalDebit"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
+                        android:layout_marginTop="3dp"
                         android:text="₹0"
                         android:textColor="#F87171"
-                        android:textSize="21sp"
+                        android:textSize="16.5sp"
                         android:textStyle="bold" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -165,7 +174,8 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:layout_marginStart="6dp"
+                android:layout_marginStart="5dp"
+                android:layout_marginEnd="5dp"
                 app:cardBackgroundColor="#161A22"
                 app:cardCornerRadius="14dp"
                 app:cardElevation="0dp"
@@ -176,24 +186,61 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="14dp">
+                    android:padding="11dp">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="RECEIVED"
                         android:textColor="#6B7280"
-                        android:textSize="10.5sp"
-                        android:letterSpacing="0.08" />
+                        android:textSize="9.5sp"
+                        android:letterSpacing="0.06" />
 
                     <TextView
                         android:id="@+id/tvTotalCredit"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
+                        android:layout_marginTop="3dp"
                         android:text="₹0"
                         android:textColor="#4ADE80"
-                        android:textSize="21sp"
+                        android:textSize="16.5sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="5dp"
+                app:cardBackgroundColor="#161A22"
+                app:cardCornerRadius="14dp"
+                app:cardElevation="0dp"
+                app:strokeColor="#232833"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="11dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="INVESTED"
+                        android:textColor="#6B7280"
+                        android:textSize="9.5sp"
+                        android:letterSpacing="0.06" />
+
+                    <TextView
+                        android:id="@+id/tvTotalInvested"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="3dp"
+                        android:text="₹0"
+                        android:textColor="#5EEAD4"
+                        android:textSize="16.5sp"
                         android:textStyle="bold" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -256,6 +303,13 @@
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
+
+        <LinearLayout
+            android:id="@+id/budgetStatusContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:orientation="vertical" />
 
         <!-- Category pie chart -->
         <TextView

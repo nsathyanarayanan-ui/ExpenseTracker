@@ -15,11 +15,14 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 
+data class BudgetStatusLine(val text: String, val colorHex: String)
+
 class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val repo = TransactionRepository(app)
 
     val totalDebit = MutableLiveData(0.0)
     val totalCredit = MutableLiveData(0.0)
+    val totalInvested = MutableLiveData(0.0)
     val categoryTotals = MutableLiveData<List<CategoryTotal>>(emptyList())
     val merchantTotals = MutableLiveData<List<MerchantTotal>>(emptyList())
     val recentTransactions = MutableLiveData<List<Transaction>>(emptyList())
@@ -29,8 +32,11 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     val healthBand = MutableLiveData("")
     val monthLabel = MutableLiveData("")
     val canGoForward = MutableLiveData(false)
+    val budgetStatus = MutableLiveData<List<BudgetStatusLine>>(emptyList())
 
     private var monthOffset = 0
+    private var rangeStart = 0L
+    private var rangeEnd = 0L
     private val monthFormat = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
 
     fun loadCurrentMonth() = loadMonth(0)
@@ -54,22 +60,55 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         cal.add(Calendar.MONTH, 1)
         val end = cal.timeInMillis - 1
 
+        rangeStart = start
+        rangeEnd = end
         load(start, end)
+    }
+
+    /** Call after editing a budget in Settings to refresh the status list without a full reload. */
+    fun refreshBudgetStatus() {
+        viewModelScope.launch {
+            val cats = categoryTotals.value ?: emptyList()
+            budgetStatus.value = computeBudgetStatus(cats, rangeStart, rangeEnd)
+        }
+    }
+
+    private suspend fun computeBudgetStatus(cats: List<CategoryTotal>, start: Long, end: Long): List<BudgetStatusLine> {
+        val budgets = repo.getBudgets()
+        if (budgets.isEmpty()) return emptyList()
+        val spentByCategory = cats.associateBy { it.category }
+
+        return budgets.map { budget ->
+            val spent = spentByCategory[budget.category]?.total ?: 0.0
+            val pct = if (budget.monthlyLimit > 0) (spent / budget.monthlyLimit * 100) else 0.0
+            val spentStr = "₹%,.0f".format(spent)
+            val limitStr = "₹%,.0f".format(budget.monthlyLimit)
+            val pctStr = "%.0f".format(pct)
+            val color = when {
+                pct >= 100 -> "#F87171"
+                pct >= 80 -> "#FBBF24"
+                else -> "#4ADE80"
+            }
+            BudgetStatusLine("${budget.category}: $spentStr / $limitStr ($pctStr%)", color)
+        }
     }
 
     private fun load(start: Long, end: Long) {
         viewModelScope.launch {
             val debit = repo.totalDebit(start, end)
+            val invested = repo.totalInvested(start, end)
             val credit = repo.totalCredit(start, end)
             val cats = repo.categoryBreakdown(start, end)
             val merchants = repo.merchantBreakdown(start, end)
             val recent = repo.getRecentInRange(start, end, 30)
 
             totalDebit.value = debit
+            totalInvested.value = invested
             totalCredit.value = credit
             categoryTotals.value = cats
             merchantTotals.value = merchants
             recentTransactions.value = recent
+            budgetStatus.value = computeBudgetStatus(cats, start, end)
 
             unnecessaryFlags.value = InsightsEngine.unnecessarySpendFlags(cats, merchants, debit)
             val savings = InsightsEngine.savingsOpportunities(cats, merchants)

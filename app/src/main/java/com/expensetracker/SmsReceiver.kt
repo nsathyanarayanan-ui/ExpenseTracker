@@ -27,7 +27,7 @@ class SmsReceiver : BroadcastReceiver() {
 
             val parsed = SmsParser.parse(sender, body) ?: continue
             val rawKey = parsed.merchant
-            val category = Categorizer.categorize(parsed.merchant)
+            val category = Categorizer.categorize(parsed.merchant, parsed.rawBody)
 
             CoroutineScope(Dispatchers.IO).launch {
                 val db = AppDatabase.getInstance(context)

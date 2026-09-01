@@ -18,6 +18,7 @@ class TransactionRepository(context: Context) {
         dao.merchantBreakdown(start, end)
 
     suspend fun totalDebit(start: Long, end: Long): Double = dao.totalDebit(start, end) ?: 0.0
+    suspend fun totalInvested(start: Long, end: Long): Double = dao.totalInvested(start, end) ?: 0.0
     suspend fun totalCredit(start: Long, end: Long): Double = dao.totalCredit(start, end) ?: 0.0
 
     suspend fun topExpenses(n: Int = 20): List<Transaction> = dao.topExpenses(n)

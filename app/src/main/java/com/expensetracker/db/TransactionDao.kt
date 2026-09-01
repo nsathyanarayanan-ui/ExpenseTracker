@@ -18,7 +18,7 @@ interface TransactionDao {
     @Query("""
         SELECT category AS category, SUM(amount) AS total, COUNT(*) AS count
         FROM transactions
-        WHERE type = 'DEBIT' AND timestamp BETWEEN :start AND :end
+        WHERE type = 'DEBIT' AND category != 'Investments' AND timestamp BETWEEN :start AND :end
         GROUP BY category ORDER BY total DESC
     """)
     suspend fun categoryBreakdown(start: Long, end: Long): List<CategoryTotal>
@@ -26,13 +26,16 @@ interface TransactionDao {
     @Query("""
         SELECT merchant AS merchant, SUM(amount) AS total, COUNT(*) AS count
         FROM transactions
-        WHERE type = 'DEBIT' AND timestamp BETWEEN :start AND :end
+        WHERE type = 'DEBIT' AND category != 'Investments' AND timestamp BETWEEN :start AND :end
         GROUP BY merchant ORDER BY total DESC
     """)
     suspend fun merchantBreakdown(start: Long, end: Long): List<MerchantTotal>
 
-    @Query("SELECT SUM(amount) FROM transactions WHERE type = 'DEBIT' AND timestamp BETWEEN :start AND :end")
+    @Query("SELECT SUM(amount) FROM transactions WHERE type = 'DEBIT' AND category != 'Investments' AND timestamp BETWEEN :start AND :end")
     suspend fun totalDebit(start: Long, end: Long): Double?
+
+    @Query("SELECT SUM(amount) FROM transactions WHERE type = 'DEBIT' AND category = 'Investments' AND timestamp BETWEEN :start AND :end")
+    suspend fun totalInvested(start: Long, end: Long): Double?
 
     @Query("SELECT SUM(amount) FROM transactions WHERE type = 'CREDIT' AND timestamp BETWEEN :start AND :end")
     suspend fun totalCredit(start: Long, end: Long): Double?
