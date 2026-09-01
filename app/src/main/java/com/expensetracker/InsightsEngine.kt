@@ -52,21 +52,21 @@ object InsightsEngine {
         val result = mutableListOf<SavingsOpportunity>()
 
         byCat["Dining Out & Snacks"]?.let {
-            result.add(SavingsOpportunity("Cut dining out by 30%", "30% of ₹%.0f".format(it.total), it.total * 0.30))
+            result.add(SavingsOpportunity("Cut dining out by 30%", "30%% of ₹%.0f".format(it.total), it.total * 0.30))
         }
         byCat["Food Delivery"]?.let {
-            result.add(SavingsOpportunity("Cut food delivery by 25%", "25% of ₹%.0f".format(it.total), it.total * 0.25))
+            result.add(SavingsOpportunity("Cut food delivery by 25%", "25%% of ₹%.0f".format(it.total), it.total * 0.25))
         }
         byCat["Entertainment"]?.let {
-            result.add(SavingsOpportunity("Trim entertainment by 20%", "20% of ₹%.0f".format(it.total), it.total * 0.20))
+            result.add(SavingsOpportunity("Trim entertainment by 20%", "20%% of ₹%.0f".format(it.total), it.total * 0.20))
         }
         byCat["Subscriptions"]?.let {
-            result.add(SavingsOpportunity("Audit idle subscriptions", "30% of ₹%.0f if underused".format(it.total), it.total * 0.30))
+            result.add(SavingsOpportunity("Audit idle subscriptions", "30%% of ₹%.0f if underused".format(it.total), it.total * 0.30))
         }
         val freqSmall = merchants.filter { it.count >= 15 && (it.total / it.count) < 1000 }
         if (freqSmall.isNotEmpty()) {
             val sum = freqSmall.sumOf { it.total }
-            result.add(SavingsOpportunity("Batch frequent small-ticket shopping", "15% of ₹%.0f across %d merchants".format(sum, freqSmall.size), sum * 0.15))
+            result.add(SavingsOpportunity("Batch frequent small-ticket shopping", "15%% of ₹%.0f across %d merchants".format(sum, freqSmall.size), sum * 0.15))
         }
         return result
     }
