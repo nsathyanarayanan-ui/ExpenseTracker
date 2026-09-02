@@ -168,8 +168,7 @@ class MainActivity : AppCompatActivity() {
 
         val savings = viewModel.savingsOpportunities.value ?: emptyList()
         val savingsLines = savings.joinToString("\n") {
-            val amountStr = "₹%,.0f".format(it.monthlySavings)
-            "  • ${it.title} — save $amountStr/mo"
+            "  • ${it.title} — save ₹%,.0f/mo".format(it.monthlySavings)
         }
 
         val report = buildString {
