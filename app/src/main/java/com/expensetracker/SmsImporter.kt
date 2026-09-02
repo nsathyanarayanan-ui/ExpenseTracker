@@ -18,9 +18,20 @@ import kotlinx.coroutines.withContext
  */
 object SmsImporter {
 
-    data class ImportResult(val scanned: Int, val imported: Int)
+    data class ImportResult(val scanned: Int, val imported: Int, val updated: Int)
 
-    suspend fun importExisting(context: Context): ImportResult = withContext(Dispatchers.IO) {
+    /**
+     * @param monthsBack how far back to scan. Older messages are rarely useful and
+     *        scanning the whole inbox on every run is slow, so this defaults to a
+     *        year. Pass 0 to scan everything.
+     * @param onProgress invoked with (scanned, imported) periodically so the caller
+     *        can show progress rather than freezing on a silent button.
+     */
+    suspend fun importExisting(
+        context: Context,
+        monthsBack: Int = 12,
+        onProgress: ((Int, Int) -> Unit)? = null
+    ): ImportResult = withContext(Dispatchers.IO) {
         val db = AppDatabase.getInstance(context)
         val dao = db.transactionDao()
         val aliasDao = db.merchantAliasDao()
@@ -28,6 +39,7 @@ object SmsImporter {
 
         var scanned = 0
         var imported = 0
+        var updated = 0
 
         val uri: Uri = Telephony.Sms.Inbox.CONTENT_URI
         val projection = arrayOf(
@@ -36,7 +48,22 @@ object SmsImporter {
             Telephony.Sms.DATE
         )
 
-        val cursor = context.contentResolver.query(uri, projection, null, null, Telephony.Sms.DATE + " ASC")
+        val selection: String?
+        val selectionArgs: Array<String>?
+        if (monthsBack > 0) {
+            val cutoff = java.util.Calendar.getInstance().apply {
+                add(java.util.Calendar.MONTH, -monthsBack)
+            }.timeInMillis
+            selection = "${Telephony.Sms.DATE} >= ?"
+            selectionArgs = arrayOf(cutoff.toString())
+        } else {
+            selection = null
+            selectionArgs = null
+        }
+
+        val cursor = context.contentResolver.query(
+            uri, projection, selection, selectionArgs, Telephony.Sms.DATE + " ASC"
+        )
         cursor?.use {
             val addressIdx = it.getColumnIndexOrThrow(Telephony.Sms.ADDRESS)
             val bodyIdx = it.getColumnIndexOrThrow(Telephony.Sms.BODY)
@@ -79,16 +106,14 @@ object SmsImporter {
                 if (rowId != -1L) {
                     imported++
                 } else if (alias == null) {
-                    // Already imported previously. If it's not manually labeled via an alias,
-                    // refresh its category/merchant using current logic — this is what lets
-                    // categorization fixes (e.g. newly recognized investment SMS patterns)
-                    // retroactively apply to old entries on a re-import, instead of being
-                    // silently skipped forever just because the row already exists.
                     dao.recategorizeExisting(timestamp, body, displayMerchant, category)
+                    updated++
                 }
+
+                if (scanned % 25 == 0) onProgress?.invoke(scanned, imported)
             }
         }
 
-        ImportResult(scanned, imported)
+        ImportResult(scanned, imported, updated)
     }
 }

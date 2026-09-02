@@ -78,7 +78,42 @@ interface TransactionDao {
 
     @Query("UPDATE transactions SET merchant = :merchant, category = :category, merchantSource = 'NOTIFICATION' WHERE id = :id")
     suspend fun enrichWithNotification(id: Long, merchant: String, category: String)
+
+    /**
+     * Monthly spend totals over a trailing window, used to compute how much
+     * month-to-month variation there actually is instead of assuming a figure.
+     */
+    @Query("""
+        SELECT strftime('%Y-%m', timestamp / 1000, 'unixepoch', 'localtime') AS month,
+               SUM(amount) AS total
+        FROM transactions
+        WHERE type = 'DEBIT' AND category != 'Investments' AND timestamp >= :since
+        GROUP BY month
+        ORDER BY month ASC
+    """)
+    suspend fun monthlyTotalsSince(since: Long): List<MonthlyTotal>
+
+    /**
+     * Same amount to the same merchant within a few minutes — almost always an
+     * accidental double payment rather than two intentional ones.
+     */
+    @Query("""
+        SELECT SUM(amount) FROM transactions t1
+        WHERE t1.type = 'DEBIT'
+          AND t1.timestamp BETWEEN :start AND :end
+          AND EXISTS (
+            SELECT 1 FROM transactions t2
+            WHERE t2.id != t1.id
+              AND t2.amount = t1.amount
+              AND t2.merchant = t1.merchant
+              AND t2.type = 'DEBIT'
+              AND ABS(t2.timestamp - t1.timestamp) < 300000
+              AND t2.id < t1.id
+          )
+    """)
+    suspend fun duplicateSpendInRange(start: Long, end: Long): Double?
 }
 
 data class CategoryTotal(val category: String, val total: Double, val count: Int)
 data class MerchantTotal(val merchant: String, val total: Double, val count: Int)
+data class MonthlyTotal(val month: String, val total: Double)

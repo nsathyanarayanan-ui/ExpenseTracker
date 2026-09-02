@@ -30,6 +30,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     val savingsOpportunities = MutableLiveData<List<SavingsOpportunity>>(emptyList())
     val healthScore = MutableLiveData(0)
     val healthBand = MutableLiveData("")
+    val healthBreakdown = MutableLiveData<List<BudgetStatusLine>>(emptyList())
     val monthLabel = MutableLiveData("")
     val canGoForward = MutableLiveData(false)
     val budgetStatus = MutableLiveData<List<BudgetStatusLine>>(emptyList())
@@ -120,14 +121,60 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
             val reclaimablePct = if (debit > 0) savings.sumOf { it.monthlySavings } / debit else 0.0
 
+            // Month-to-month variability, measured rather than assumed. Needs at least
+            // two complete months of history; until then, a neutral mid-range value is
+            // used so a brand-new install isn't scored as wildly erratic.
+            val sixMonthsAgo = Calendar.getInstance().apply { add(Calendar.MONTH, -6) }.timeInMillis
+            val monthly = repo.monthlyTotalsSince(sixMonthsAgo).map { it.total }
+            val coefficientOfVariation = if (monthly.size >= 2) {
+                val mean = monthly.average()
+                if (mean > 0) {
+                    val variance = monthly.sumOf { (it - mean) * (it - mean) } / monthly.size
+                    kotlin.math.sqrt(variance) / mean
+                } else 0.0
+            } else 0.15
+
+            // Share of this month's spend that looks like accidental double payments.
+            val duplicateSpend = repo.duplicateSpendInRange(start, end)
+            val anomalyRatio = if (debit > 0) duplicateSpend / debit else 0.0
+
             val score = InsightsEngine.healthScore(
                 discretionaryRatio = discretionaryRatio,
-                monthlyCoefficientOfVariation = 0.15,
-                anomalyRatio = 0.0,
+                monthlyCoefficientOfVariation = coefficientOfVariation,
+                anomalyRatio = anomalyRatio,
                 reclaimablePct = reclaimablePct
             )
             healthScore.value = score.total
             healthBand.value = score.band
+
+            fun bandColor(actual: Int, max: Int): String {
+                val pct = if (max > 0) actual.toDouble() / max else 0.0
+                return when {
+                    pct >= 0.75 -> "#4ADE80"
+                    pct >= 0.45 -> "#FBBF24"
+                    else -> "#F87171"
+                }
+            }
+
+            healthBreakdown.value = listOf(
+                BudgetStatusLine(
+                    "Discretionary spend  ${score.discretionaryScore}/30  (${"%.0f".format(discretionaryRatio * 100)}% of outgoings)",
+                    bandColor(score.discretionaryScore, 30)
+                ),
+                BudgetStatusLine(
+                    "Month-to-month consistency  ${score.consistencyScore}/25  (variation ${"%.0f".format(coefficientOfVariation * 100)}%)",
+                    bandColor(score.consistencyScore, 25)
+                ),
+                BudgetStatusLine(
+                    "Duplicate/anomaly control  ${score.anomalyScore}/20" +
+                        if (duplicateSpend > 0) "  (₹${"%,.0f".format(duplicateSpend)} looks duplicated)" else "",
+                    bandColor(score.anomalyScore, 20)
+                ),
+                BudgetStatusLine(
+                    "Savings capacity  ${score.savingsCapacityScore}/25  (${"%.0f".format(reclaimablePct * 100)}% reclaimable)",
+                    bandColor(score.savingsCapacityScore, 25)
+                )
+            )
         }
     }
 }

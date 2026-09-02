@@ -36,6 +36,13 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Keeps balances out of screenshots and the app-switcher preview.
+        window.setFlags(
+            android.view.WindowManager.LayoutParams.FLAG_SECURE,
+            android.view.WindowManager.LayoutParams.FLAG_SECURE
+        )
+
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -107,14 +114,21 @@ class MainActivity : AppCompatActivity() {
             binding.btnImportSms.isEnabled = false
             binding.btnImportSms.text = "Importing..."
             lifecycleScope.launch {
-                val result = SmsImporter.importExisting(this@MainActivity)
+                val result = SmsImporter.importExisting(
+                    context = this@MainActivity,
+                    monthsBack = 12,
+                    onProgress = { scanned, found ->
+                        runOnUiThread { binding.btnImportSms.text = "$scanned scanned, $found found" }
+                    }
+                )
                 binding.btnImportSms.isEnabled = true
-                binding.btnImportSms.text = "Import Past SMS"
-                android.widget.Toast.makeText(
-                    this@MainActivity,
-                    "Scanned ${result.scanned} messages, imported ${result.imported} transactions",
-                    android.widget.Toast.LENGTH_LONG
-                ).show()
+                binding.btnImportSms.text = "Import SMS"
+                val msg = buildString {
+                    append("Scanned ${result.scanned} messages")
+                    append(" · ${result.imported} new")
+                    if (result.updated > 0) append(" · ${result.updated} recategorized")
+                }
+                android.widget.Toast.makeText(this@MainActivity, msg, android.widget.Toast.LENGTH_LONG).show()
                 viewModel.loadCurrentMonth()
             }
         }
@@ -142,6 +156,10 @@ class MainActivity : AppCompatActivity() {
         viewModel.totalInvested.observe(this) { binding.tvTotalInvested.text = "₹%,.0f".format(it) }
         viewModel.healthScore.observe(this) { binding.tvHealthScore.text = "$it / 100" }
         viewModel.healthBand.observe(this) { binding.tvHealthBand.text = it }
+        viewModel.healthBreakdown.observe(this) { lines ->
+            binding.healthBreakdownContainer.removeAllViews()
+            lines.forEach { addLine(binding.healthBreakdownContainer, it.text, it.colorHex) }
+        }
         viewModel.categoryTotals.observe(this) { renderPieChart(it) }
         viewModel.merchantTotals.observe(this) { renderBarChart(it.take(10)) }
         viewModel.recentTransactions.observe(this) { transactionAdapter.submitList(it) }

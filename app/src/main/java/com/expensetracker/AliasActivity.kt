@@ -94,11 +94,23 @@ class AliasAdapter(
             if (label.isNotEmpty()) onSave(rawKey, label, category)
         }
 
+        // Writing on every keystroke meant typing "Swiggy" fired six database writes,
+        // each also rewriting every matching transaction. Waiting for a pause collapses
+        // that into one.
+        val handler = android.os.Handler(android.os.Looper.getMainLooper())
+        var pendingSave: Runnable? = null
+        fun scheduleSave() {
+            pendingSave?.let { handler.removeCallbacks(it) }
+            val r = Runnable { trySave() }
+            pendingSave = r
+            handler.postDelayed(r, 500)
+        }
+
         holder.labelInput.removeTextChangedListener(holder.view.getTag(R.id.tvRawKey) as? TextWatcher)
         val watcher = object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-            override fun afterTextChanged(s: Editable?) { trySave() }
+            override fun afterTextChanged(s: Editable?) { scheduleSave() }
         }
         holder.labelInput.addTextChangedListener(watcher)
         holder.view.setTag(R.id.tvRawKey, watcher)

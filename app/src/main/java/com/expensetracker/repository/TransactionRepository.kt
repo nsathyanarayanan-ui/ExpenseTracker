@@ -4,6 +4,7 @@ import android.content.Context
 import com.expensetracker.db.AppDatabase
 import com.expensetracker.db.CategoryTotal
 import com.expensetracker.db.MerchantTotal
+import com.expensetracker.db.MonthlyTotal
 import com.expensetracker.db.Transaction
 
 class TransactionRepository(context: Context) {
@@ -25,6 +26,11 @@ class TransactionRepository(context: Context) {
 
     suspend fun getRecentInRange(start: Long, end: Long, limit: Int = 30): List<Transaction> =
         dao.getRecentInRange(start, end, limit)
+
+    suspend fun monthlyTotalsSince(since: Long): List<MonthlyTotal> = dao.monthlyTotalsSince(since)
+
+    suspend fun duplicateSpendInRange(start: Long, end: Long): Double =
+        dao.duplicateSpendInRange(start, end) ?: 0.0
 
     suspend fun transactionsInCategory(category: String, start: Long, end: Long): List<Transaction> =
         dao.transactionsInCategory(category, start, end)
