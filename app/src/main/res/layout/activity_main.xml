@@ -181,6 +181,53 @@
                 android:orientation="vertical"
                 android:padding="16dp">
 
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardNotificationAccess"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    android:visibility="gone"
+                    app:cardBackgroundColor="#1A1F2E"
+                    app:cardCornerRadius="14dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="#3B82F6"
+                    app:strokeWidth="1dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="14dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Auto-detect merchant names"
+                            android:textColor="#FFFFFF"
+                            android:textSize="13.5sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="Your bank SMS doesn't include merchant names. Allow notification access to read them from GPay/PhonePe automatically instead of labeling accounts by hand."
+                            android:textColor="#9AA3B2"
+                            android:textSize="11.5sp" />
+
+                        <Button
+                            android:id="@+id/btnEnableNotificationAccess"
+                            android:layout_width="wrap_content"
+                            android:layout_height="36dp"
+                            android:layout_marginTop="10dp"
+                            android:backgroundTint="#3B82F6"
+                            android:text="Enable"
+                            android:textColor="#FFFFFF"
+                            android:textAllCaps="false"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"

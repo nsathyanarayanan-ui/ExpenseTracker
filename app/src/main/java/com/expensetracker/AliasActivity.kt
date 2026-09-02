@@ -16,6 +16,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.expensetracker.db.AppDatabase
 import com.expensetracker.db.MerchantAlias
+import com.expensetracker.db.UnlabeledAccount
 import kotlinx.coroutines.launch
 
 class AliasActivity : AppCompatActivity() {
@@ -23,8 +24,8 @@ class AliasActivity : AppCompatActivity() {
     private val categories = listOf(
         "Food Delivery", "Dining Out & Snacks", "Groceries", "Healthcare",
         "Utilities & Bills", "Fuel & Transport", "Education", "Entertainment",
-        "Shopping", "Subscriptions", "Travel", "Personal Transfers", "Bank Transfer",
-        "Other / Miscellaneous"
+        "Shopping", "Subscriptions", "Travel", "Investments",
+        "Personal Transfers", "Bank Transfer", "Other / Miscellaneous"
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -37,10 +38,10 @@ class AliasActivity : AppCompatActivity() {
         val db = AppDatabase.getInstance(this)
 
         lifecycleScope.launch {
-            val rawKeys = db.merchantAliasDao().getUnlabeledAccountKeys()
+            val accounts = db.merchantAliasDao().getUnlabeledAccountsBySpend()
             val existing = db.merchantAliasDao().getAll().associateBy { it.rawKey }
 
-            rv.adapter = AliasAdapter(rawKeys, existing, categories) { rawKey, label, category ->
+            rv.adapter = AliasAdapter(accounts, existing, categories) { rawKey, label, category ->
                 lifecycleScope.launch {
                     db.merchantAliasDao().upsert(MerchantAlias(rawKey, label, category))
                     db.transactionDao().applyAliasToExisting(rawKey, label, category)
@@ -51,7 +52,7 @@ class AliasActivity : AppCompatActivity() {
 }
 
 class AliasAdapter(
-    private val rawKeys: List<String>,
+    private val accounts: List<UnlabeledAccount>,
     private val existing: Map<String, MerchantAlias>,
     private val categories: List<String>,
     private val onSave: (String, String, String) -> Unit
@@ -59,6 +60,7 @@ class AliasAdapter(
 
     inner class VH(val view: View) : RecyclerView.ViewHolder(view) {
         val rawKeyText: TextView = view.findViewById(R.id.tvRawKey)
+        val spendSummary: TextView = view.findViewById(R.id.tvSpendSummary)
         val labelInput: EditText = view.findViewById(R.id.etLabel)
         val categorySpinner: Spinner = view.findViewById(R.id.spCategory)
     }
@@ -69,8 +71,12 @@ class AliasAdapter(
     }
 
     override fun onBindViewHolder(holder: VH, position: Int) {
-        val rawKey = rawKeys[position]
+        val account = accounts[position]
+        val rawKey = account.rawKey
+
         holder.rawKeyText.text = rawKey
+        val totalStr = "₹%,.0f".format(account.total)
+        holder.spendSummary.text = "$totalStr across ${account.count} transactions"
 
         val adapter = ArrayAdapter(holder.view.context, android.R.layout.simple_spinner_dropdown_item, categories)
         holder.categorySpinner.adapter = adapter
@@ -98,12 +104,12 @@ class AliasAdapter(
         holder.view.setTag(R.id.tvRawKey, watcher)
 
         holder.categorySpinner.post {
-            holder.categorySpinner.setOnItemSelectedListener(object : android.widget.AdapterView.OnItemSelectedListener {
+            holder.categorySpinner.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
                 override fun onItemSelected(p: android.widget.AdapterView<*>?, v: View?, pos: Int, id: Long) { trySave() }
                 override fun onNothingSelected(p: android.widget.AdapterView<*>?) {}
-            })
+            }
         }
     }
 
-    override fun getItemCount() = rawKeys.size
+    override fun getItemCount() = accounts.size
 }

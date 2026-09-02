@@ -24,11 +24,12 @@ interface BudgetDao {
     suspend fun getForCategory(category: String): Budget?
 }
 
-@Database(entities = [Transaction::class, Budget::class, MerchantAlias::class], version = 3, exportSchema = false)
+@Database(entities = [Transaction::class, Budget::class, MerchantAlias::class, PendingNotification::class], version = 4, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun transactionDao(): TransactionDao
     abstract fun budgetDao(): BudgetDao
     abstract fun merchantAliasDao(): MerchantAliasDao
+    abstract fun pendingNotificationDao(): PendingNotificationDao
 
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null

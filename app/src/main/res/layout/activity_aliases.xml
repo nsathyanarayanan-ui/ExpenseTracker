@@ -19,7 +19,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
         android:layout_marginBottom="16dp"
-        android:text="Name each account once (e.g. 'Swiggy', 'Landlord') and pick its category — every past and future transaction to that account updates automatically."
+        android:text="Sorted by amount spent — labelling the top few covers most of your spending. Name each account once and pick its category; every past and future transaction to it updates automatically."
         android:textColor="#9AA3B2"
         android:textSize="12sp" />
 

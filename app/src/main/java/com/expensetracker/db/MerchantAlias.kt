@@ -27,4 +27,24 @@ interface MerchantAliasDao {
 
     @Query("SELECT DISTINCT rawMerchantKey FROM transactions WHERE rawMerchantKey LIKE 'Account XX%'")
     suspend fun getUnlabeledAccountKeys(): List<String>
+
+    /**
+     * Unlabeled accounts ordered by how much money went through them, so the few
+     * that actually matter surface first instead of being buried under a long tail
+     * of one-off small transfers.
+     */
+    @Query("""
+        SELECT rawMerchantKey AS rawKey, SUM(amount) AS total, COUNT(*) AS count
+        FROM transactions
+        WHERE rawMerchantKey LIKE 'Account XX%' AND type = 'DEBIT'
+        GROUP BY rawMerchantKey
+        ORDER BY total DESC
+    """)
+    suspend fun getUnlabeledAccountsBySpend(): List<UnlabeledAccount>
 }
+
+data class UnlabeledAccount(
+    val rawKey: String,
+    val total: Double,
+    val count: Int
+)

@@ -43,14 +43,33 @@ class SmsReceiver : BroadcastReceiver() {
                     category = finalCategory,
                     account = parsed.account,
                     timestamp = timestamp,
-                    rawSms = body
+                    rawSms = body,
+                    // A manual alias is the user's own decision — mark it so the
+                    // notification matcher won't later overwrite it.
+                    merchantSource = if (alias != null) "ALIAS" else "SMS"
                 )
-                db.transactionDao().insert(txn)
+                val rowId = db.transactionDao().insert(txn)
+
+                // If a UPI app notification for this same payment already arrived,
+                // use its merchant name — that's the piece the bank SMS lacks.
+                var effectiveCategory = finalCategory
+                if (rowId != -1L && alias == null) {
+                    val enrichedMerchant = NotificationMatcher.onTransactionStored(
+                        context = context,
+                        transactionId = rowId,
+                        amount = parsed.amount,
+                        timestamp = timestamp,
+                        rawSms = body
+                    )
+                    if (enrichedMerchant != null) {
+                        effectiveCategory = Categorizer.categorize(enrichedMerchant, body)
+                    }
+                }
 
                 // After storing, kick off a budget check for this category
                 if (txn.type == "DEBIT") {
                     val work = OneTimeWorkRequestBuilder<BudgetCheckWorker>()
-                        .setInputData(workDataOf("category" to txn.category))
+                        .setInputData(workDataOf("category" to effectiveCategory))
                         .build()
                     WorkManager.getInstance(context).enqueue(work)
                 }

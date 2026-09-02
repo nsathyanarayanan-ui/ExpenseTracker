@@ -67,6 +67,23 @@ class MainActivity : AppCompatActivity() {
         showTab(0)
     }
 
+    override fun onResume() {
+        super.onResume()
+        updateNotificationAccessCard()
+    }
+
+    private fun updateNotificationAccessCard() {
+        val enabled = isNotificationAccessGranted()
+        binding.cardNotificationAccess.visibility = if (enabled) View.GONE else View.VISIBLE
+    }
+
+    private fun isNotificationAccessGranted(): Boolean {
+        val flat = android.provider.Settings.Secure.getString(
+            contentResolver, "enabled_notification_listeners"
+        ) ?: return false
+        return flat.contains(packageName)
+    }
+
     private fun wireButtons() {
         binding.btnPrevMonth.setOnClickListener { viewModel.goToPreviousMonth() }
         binding.btnNextMonth.setOnClickListener { viewModel.goToNextMonth() }
@@ -80,6 +97,10 @@ class MainActivity : AppCompatActivity() {
         }
         binding.btnLabelAccounts.setOnClickListener {
             startActivity(android.content.Intent(this, AliasActivity::class.java))
+        }
+
+        binding.btnEnableNotificationAccess.setOnClickListener {
+            startActivity(android.content.Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"))
         }
 
         binding.btnImportSms.setOnClickListener {
@@ -164,11 +185,15 @@ class MainActivity : AppCompatActivity() {
         val band = binding.tvHealthBand.text.toString()
 
         val cats = viewModel.categoryTotals.value ?: emptyList()
-        val catLines = cats.joinToString("\n") { "  ${it.category}: ₹%,.0f (${it.count} txns)".format(it.total) }
+        val catLines = cats.joinToString("\n") {
+            val totalStr = "₹%,.0f".format(it.total)
+            "  ${it.category}: $totalStr (${it.count} txns)"
+        }
 
         val savings = viewModel.savingsOpportunities.value ?: emptyList()
         val savingsLines = savings.joinToString("\n") {
-            "  • ${it.title} — save ₹%,.0f/mo".format(it.monthlySavings)
+            val amountStr = "₹%,.0f".format(it.monthlySavings)
+            "  • ${it.title} — save $amountStr/mo"
         }
 
         val report = buildString {

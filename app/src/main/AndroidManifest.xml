@@ -25,6 +25,16 @@
 
         <activity android:name=".MainActivity" android:exported="false" />
 
+        <service
+            android:name=".UpiNotificationListener"
+            android:label="Expense Tracker UPI Reader"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
         <activity android:name=".SettingsActivity" android:exported="false" />
         <activity android:name=".AliasActivity" android:exported="false" />
 

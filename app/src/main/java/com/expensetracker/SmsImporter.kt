@@ -72,7 +72,8 @@ object SmsImporter {
                     category = category,
                     account = parsed.account,
                     timestamp = timestamp,
-                    rawSms = body
+                    rawSms = body,
+                    merchantSource = if (alias != null) "ALIAS" else "SMS"
                 )
                 val rowId = dao.insert(txn)
                 if (rowId != -1L) {
