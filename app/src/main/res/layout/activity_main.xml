@@ -125,6 +125,17 @@
                 android:textAllCaps="false"
                 android:textSize="11.5sp" />
         </LinearLayout>
+
+        <Button
+            android:id="@+id/btnImportGpayCsv"
+            android:layout_width="match_parent"
+            android:layout_height="36dp"
+            android:layout_marginTop="6dp"
+            android:backgroundTint="#1E293B"
+            android:text="Import GPay Export"
+            android:textColor="#5EEAD4"
+            android:textAllCaps="false"
+            android:textSize="11.5sp" />
     </LinearLayout>
 
     <!-- Tabs -->

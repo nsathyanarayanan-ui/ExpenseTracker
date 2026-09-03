@@ -34,6 +34,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private val csvPickerLauncher = registerForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri -> if (uri != null) runCsvBackfill(uri) }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -131,6 +135,35 @@ class MainActivity : AppCompatActivity() {
                 android.widget.Toast.makeText(this@MainActivity, msg, android.widget.Toast.LENGTH_LONG).show()
                 viewModel.loadCurrentMonth()
             }
+        }
+
+        binding.btnImportGpayCsv.setOnClickListener {
+            csvPickerLauncher.launch(arrayOf("text/csv", "text/comma-separated-values", "*/*"))
+        }
+    }
+
+    private fun runCsvBackfill(uri: android.net.Uri) {
+        binding.btnImportGpayCsv.isEnabled = false
+        binding.btnImportGpayCsv.text = "Matching..."
+        lifecycleScope.launch {
+            val result = CsvMerchantBackfiller.importAndBackfill(this@MainActivity, uri)
+            binding.btnImportGpayCsv.isEnabled = true
+            binding.btnImportGpayCsv.text = "Import GPay Export"
+
+            val summary = buildString {
+                append("Read ${result.parsedFromCsv} rows.\n")
+                append("Backfilled ${result.backfilled} merchant names.\n")
+                if (result.ambiguous > 0) append("${result.ambiguous} skipped — multiple possible matches.\n")
+                if (result.noMatch > 0) append("${result.noMatch} had no matching SMS transaction.\n")
+                if (result.alreadyLabeled > 0) append("${result.alreadyLabeled} were already labeled.")
+            }
+            android.app.AlertDialog.Builder(this@MainActivity)
+                .setTitle("GPay Export Import")
+                .setMessage(summary.trim())
+                .setPositiveButton("OK", null)
+                .show()
+
+            viewModel.loadCurrentMonth()
         }
     }
 

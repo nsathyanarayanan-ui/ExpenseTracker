@@ -112,6 +112,46 @@ interface TransactionDao {
           )
     """)
     suspend fun duplicateSpendInRange(start: Long, end: Long): Double?
+
+    /**
+     * Strongest possible match for the one-time GPay export backfill: the UPI
+     * transaction ID from the export appears verbatim inside the bank SMS text
+     * ("...UPI Ref no 124035200941)..."), so searching for it directly is a
+     * near-certain match — far more reliable than amount+time guessing, and used
+     * as the first attempt before falling back to that.
+     */
+    @Query("""
+        SELECT * FROM transactions
+        WHERE rawSms LIKE '%' || :upiTxnId || '%'
+          AND merchantSource != 'ALIAS'
+          AND rawMerchantKey LIKE 'Account XX%'
+    """)
+    suspend fun findByUpiRefInRawSms(upiTxnId: String): List<Transaction>
+
+    /**
+     * Fallback when the UPI ref isn't found verbatim (older SMS formats, OCR
+     * gaps, etc.) — same amount+time window used by the notification matcher.
+     * Only still-unresolved "Account XX...." entries are eligible, so this can
+     * never touch anything already labeled by hand or by a live notification.
+     */
+    @Query("""
+        SELECT * FROM transactions
+        WHERE type = :type
+          AND merchantSource != 'ALIAS'
+          AND rawMerchantKey LIKE 'Account XX%'
+          AND amount BETWEEN :amountLow AND :amountHigh
+          AND timestamp BETWEEN :windowStart AND :windowEnd
+    """)
+    suspend fun findByAmountTimeWindow(
+        type: String,
+        amountLow: Double,
+        amountHigh: Double,
+        windowStart: Long,
+        windowEnd: Long
+    ): List<Transaction>
+
+    @Query("UPDATE transactions SET merchant = :merchant, category = :category, merchantSource = 'CSV_IMPORT' WHERE id = :id")
+    suspend fun backfillFromCsv(id: Long, merchant: String, category: String)
 }
 
 data class CategoryTotal(val category: String, val total: Double, val count: Int)
